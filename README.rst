@@ -15,8 +15,8 @@ Slipstream
 Slipstream is a cool tool that allows you to generate static blogs from
 `Draft`_ `WebHooks`_
 
-.. _Draft: http://draftin.com)
-.. _WebHooks: https://draftin.com/documents/69898?token=5fjKKlZ0-AeBzqj_RAftAGdzRzl9VBfBHj5wpSWm_gU)
+.. _Draft: http://draftin.com
+.. _WebHooks: https://draftin.com/documents/69898?token=5fjKKlZ0-AeBzqj_RAftAGdzRzl9VBfBHj5wpSWm_gU
 
 
 .. A simple Flask server that allows you to publish Pelican blags from 
