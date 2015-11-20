@@ -1,0 +1,6 @@
+*.sw[a-p]
+*.pyc
+*.egg-info/*
+*.sq3
+dist/*
+tags
