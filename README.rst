@@ -19,8 +19,33 @@ Slipstream is a cool tool that allows you to generate static blogs from
 .. _WebHooks: https://draftin.com/documents/69898?token=5fjKKlZ0-AeBzqj_RAftAGdzRzl9VBfBHj5wpSWm_gU
 
 
-.. A simple Flask server that allows you to publish Pelican blags from 
-.. http://draftin.com using `WebHooks`_
+Quickstart (Easiest Version)
+----------------------------
+
+Run the following commands:
+
+::
+
+    $ docker run -d --name slipstream -p '0.0.0.0:5000:5000' \
+      -e SLIPSTREAM_OUTPUT_DIR='/usr/share/nginx/html' waynew/slipstream
+    $ docker run -d --name webserver --volumes-from slipstream \
+      -p '0.0.0.0:8080:80' nginx
+    $ docker logs --tail=1 slipstream
+    Api Key: vsup5kabBC5Qen2ADH1NMdnGNdgkZ3bXlNUJFZDLdbg=
+    $ curl icanhazip.com
+    203.0.113.42
+
+Copy the key and your IP address and head on over to the Draft `publishers`_
+page, and click the ``WebHook URL`` link. Add your URL there, go to a draft
+document and click the publish link. You should now see your blog posts when
+you go http://localhost:8080.
+
+.. _publishers: https://draftin.com/publishers
+
+TODO:
+
+Actually write some code. Also add more documentation for doing things like
+changing up the templates.
 
 .. .. _WebHooks: https://draftin.com/documents/69898?token=5fjKKlZ0-AeBzqj_RAftAGdzRzl9VBfBHj5wpSWm_gU)
 

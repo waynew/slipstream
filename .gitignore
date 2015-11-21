@@ -4,3 +4,4 @@
 *.sq3
 dist/*
 tags
+temp/
