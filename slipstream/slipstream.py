@@ -14,3 +14,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
+
+from flask import Flask
+from . import util
+
+app = Flask(__name__)
+app.config['API_KEY'] = util.get_api_key()

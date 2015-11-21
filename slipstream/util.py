@@ -35,10 +35,11 @@ def get_api_key():
             with open(filename, 'a+') as keyfile:
                 keyfile.seek(0)
                 key = keyfile.read()
+                log.debug('Found %r in %r', key, filename)
                 if not key:
                     log.info('No key found in file, generatig key')
                     keyfile.write(
-                        base64.urlsafe_b64encode(os.urandom()).decode()
+                        base64.urlsafe_b64encode(os.urandom(32)).decode()
                     )
                     keyfile.flush()
                     keyfile.seek(0)

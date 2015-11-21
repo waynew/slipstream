@@ -1,126 +1,23 @@
-import base64
 import logging
 import os
 import pytest
-import slipstream.util
-import string
-import struct
-import tempfile
-from contextlib import contextmanager
-from hypothesis import given
-from hypothesis.strategies import text, integers
-from unittest import mock
+
+API_KEY = 'fnord'
+os.environ['SLIPSTREAM_API_KEY'] = API_KEY
+
+from slipstream import slipstream
 
 log = logging.getLogger('slipstream')
 log.addHandler(logging.StreamHandler())
 log.setLevel(logging.DEBUG)
 
-try:
-    FileNotFoundError
-except:
-    FileNotFoundError = OSError
+
+# TODO: Module? Or not? -W. Werner, 2015-11-21
+@pytest.fixture(scope="module")
+def client():
+    return slipstream.app.test_client()
 
 
-@contextmanager
-def backup_file(filename):
-    with tempfile.TemporaryFile(mode='w+') as bak:
-        try:
-            with open(filename, 'r+') as f:
-                bak.write(f.read())
-                try:
-                    yield f
-                finally:
-                    bak.flush()
-                    bak.seek(0)
-                    f.seek(0)
-                    f.truncate()
-                    f.write(bak.read())
-        except FileNotFoundError:
-            try:
-                with open(filename, 'w+') as f:
-                    yield f
-            finally:
-                os.unlink(filename)
+def test_client_should_use_api_key():
+    assert slipstream.app.config['API_KEY'] == API_KEY
 
-
-@given(text(alphabet=string.printable, min_size=1))
-def test_if_SLIPSTREAM_API_KEY_exists_it_should_be_used(monkeypatch, txt):
-    expected_key = txt
-    monkeypatch.setitem(os.environ, 'SLIPSTREAM_API_KEY', expected_key)
-    
-    actual_key = slipstream.util.get_api_key()
-    assert actual_key == expected_key
-
-
-def test_if_SLIPSTREAM_API_KEY_does_not_exist_and_SLIPSTREAM_API_KEYFILE_points_to_bad_file_it_should_FileNotFoundError(monkeypatch):
-    try:
-        monkeypatch.delitem(os.environ, 'SLIPSTREAM_API_KEY')
-    except KeyError:
-        pass  # Ok, ENV doesn't have that variable.
-
-    # Make sure we have a file that doesn't exist
-    with tempfile.NamedTemporaryFile(delete=True) as f:
-        filename = f.name
-    monkeypatch.setitem(os.environ, 'SLIPSTREAM_API_KEYFILE', filename)
-
-    with pytest.raises(FileNotFoundError):
-        slipstream.util.get_api_key()
-
-
-@given(text(alphabet=''.join(string.printable.split()), min_size=1))
-def test_if_SLIPSTREAM_API_KEY_does_not_exist_and_SLIPSTREAM_API_KEYFILE_points_to_good_file_it_should_use_that_key(monkeypatch, txt):
-    expected_key = txt
-    try:
-        monkeypatch.delitem(os.environ, 'SLIPSTREAM_API_KEY')
-    except KeyError:
-        pass  # Ok, ENV doesn't have that variable.
-
-    with tempfile.NamedTemporaryFile(mode='w', delete=True) as f:
-        f.write(expected_key)
-        f.flush()
-        monkeypatch.setitem(os.environ, 'SLIPSTREAM_API_KEYFILE', f.name)
-
-        actual_key = slipstream.util.get_api_key()
-
-    assert actual_key == expected_key
-
-
-@given(text(alphabet=''.join(string.printable.split()), min_size=1))
-def test_if_no_env_vars_exist_but_api_key_exists_then_use_it(monkeypatch, txt):
-    expected_key = txt
-    for var in ('SLIPSTREAM_API_KEY', 'SLIPSTREAM_API_KEYFILE'):
-        try:
-            monkeypatch.delitem(os.environ, var)
-        except KeyError:
-            pass  # Ok, ENV doesn't have that variable.
-
-    with backup_file('.slipstream_api_key') as f:
-        f.write(expected_key)
-        f.close()
-
-        actual_key = slipstream.util.get_api_key()
-
-    assert actual_key == expected_key
-
-
-@given(integers(max_value=9223372036854775))
-def test_if_no_env_vars_exist_and_no_file_exists_it_should_be_created_and_urlsafe64encode_output_dumped_in(monkeypatch, num):
-    print(num)
-    expected_key = base64.urlsafe_b64encode(struct.pack('@l', num)).decode()
-    for var in ('SLIPSTREAM_API_KEY', 'SLIPSTREAM_API_KEYFILE'):
-        try:
-            monkeypatch.delitem(os.environ, var)
-        except KeyError:
-            pass  # Ok, ENV doesn't have that variable.
-
-    with mock.patch('slipstream.util.os.urandom') as fake_urandom:
-        fake_urandom.return_value = struct.pack('@l', num)
-
-        with backup_file('.slipstream_api_key') as f:
-            os.unlink(f.name)
-
-            actual_key = slipstream.util.get_api_key()
-            key_in_file = open(f.name).read()
-
-    assert actual_key == expected_key
-    assert actual_key == key_in_file
