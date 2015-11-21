@@ -21,3 +21,12 @@ def client():
 def test_client_should_use_api_key():
     assert slipstream.app.config['API_KEY'] == API_KEY
 
+
+def test_post_should_fail_if_api_key_is_wrong(client):
+    rv = client.post('/{}-invalid'.format(API_KEY))
+    assert rv.status_code == 403
+
+
+def test_post_should_return_200_if_api_key_is_right(client):
+    rv = client.post('/{}'.format(API_KEY))
+    assert rv.status_code == 200
