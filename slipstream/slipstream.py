@@ -15,8 +15,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from flask import Flask, abort
+import json
+from flask import Flask, abort, request
 from . import util
+from . import core
 
 app = Flask(__name__)
 app.config['API_KEY'] = util.get_api_key()
@@ -25,5 +27,16 @@ app.config['API_KEY'] = util.get_api_key()
 @app.route('/<api_key>', methods=['POST'])
 def api(api_key):
     if api_key != app.config['API_KEY']:
+        app.logger.warning('Bad API key %r', api_key)
         abort(403)
-    return 'OK'
+    else:
+        payload = json.loads(request.form['payload'])
+        # TODO: Also pass created/updated dates -W. Werner, 2015-11-21
+        core.publish(id=payload['id'],
+                     title=payload['name'],
+                     content=payload['content'],
+                     author=payload['user']['email'],
+                     )
+
+        app.logger.debug(payload)
+        return 'OK'
