@@ -5,3 +5,8 @@
 dist/*
 tags
 temp/
+.hypothesis/
+.cache/
+.coverage
+.eggs/
+.tox/
