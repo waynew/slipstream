@@ -40,6 +40,11 @@ setup(
     packages=[
         'slipstream',
     ],
+    entry_points={
+        'console_scripts': [
+            'slipstream = slipstream.slipstream:run',
+        ],
+    },
     cmdclass={'test': PyTest},
     package_dir={'slipstream': 'slipstream'},
     include_package_data=True,

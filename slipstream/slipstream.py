@@ -16,9 +16,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import json
-from flask import Flask, abort, request
+from flask import Flask, abort, request, send_from_directory
 from . import util
 from . import core
+from . import config
 
 app = Flask(__name__)
 app.config['API_KEY'] = util.get_api_key()
@@ -40,3 +41,12 @@ def api(api_key):
 
         app.logger.debug(payload)
         return 'OK'
+
+
+@app.route('/preview/<path:path>')
+def preview(path):
+    return send_from_directory('/tmp/fnord/', path)
+
+
+def run():
+    app.run('0.0.0.0', debug=True)
