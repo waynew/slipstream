@@ -10,3 +10,6 @@ temp/
 .coverage
 .eggs/
 .tox/
+content/
+output/
+.slipstream_api_key

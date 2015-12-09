@@ -1,0 +1,2 @@
+include slipstream/themes/*
+exclude slipstream/themes/*.swp

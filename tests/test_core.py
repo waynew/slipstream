@@ -35,6 +35,7 @@ def temp_config():
                             {'CONTENT_DIR': content_dir,
                              'OUTPUT_DIR': output_dir,
                              'DEFAULT_AUTHOR': 'fnord@example.com',
+                             'POST_TEMPLATE': core.env.get_template('post.html'),
                             }, clear=True):
         yield
 
@@ -323,7 +324,8 @@ def test_publish_should_call_generate_index_and_pass_it_config_OUTPUT_DIR_and_CO
 def test_publish_should_call_generate_tag_page_and_pass_it_each_tag_and_OUTPUT_DIR():
     with tempfile.TemporaryDirectory() as output_dir, \
             tempfile.TemporaryDirectory() as content_dir, \
-            mock.patch.dict(core.config, {'OUTPUT_DIR': output_dir}):
+            mock.patch.dict(core.config, {'OUTPUT_DIR': output_dir,
+                                          'CONTENT_DIR': content_dir}):
         with mock.patch('slipstream.core.generate_tag_page') as fake_gen_tag_pages:
             expected_tags = [tag.strip()
                              for tag in 'these, are, my tags'.split(',')
@@ -335,6 +337,7 @@ def test_publish_should_call_generate_tag_page_and_pass_it_each_tag_and_OUTPUT_D
                         )
             for tag in expected_tags:
                 fake_gen_tag_pages.assert_any_call(tag=tag,
+                                                   content_dir=content_dir,
                                                    output_dir=output_dir)
 
 
@@ -390,6 +393,42 @@ def test_if_publish_webhook_is_not_truthy_webhook_should_not_be_called():
                      # No tags here...
                      )
         assert fake_publish_webhook.call_count == 0
+
+
+def test_for_all_files_in_content_dir_regenerate_should_put_files_in_output_dir():
+    with tempfile.TemporaryDirectory() as content_dir, \
+         tempfile.TemporaryDirectory() as output_dir:
+        with open(os.path.join(content_dir, 'this-is-a-test.md'), 'w') as f:
+            print('Title: thIs*is_a?TEst\n\nThis is a *blog* post', file=f)
+
+        core.regenerate(content_dir=content_dir, output_dir=output_dir)
+
+        output_files = os.listdir(output_dir)
+        for filename in os.listdir(content_dir):
+            assert '{}.html'.format(filename[:-3]) in output_files
+
+
+def test_for_all_posts_in_content_dir_index_should_contain_those_titles():
+    expected_titles = ['this is some title',
+                       'this is another title',
+                       'blah blah blah',
+                       ]
+    with tempfile.TemporaryDirectory() as content_dir, \
+         tempfile.TemporaryDirectory() as output_dir:
+        for title in expected_titles:
+            with open(os.path.join(content_dir, core.slugify(title)+'.md'), 'w') as f:
+                print('Title: {}\n\nThis is a *blog* post'.format(title), file=f)
+
+        core.generate_index(content_dir=content_dir, output_dir=output_dir)
+
+        with open(os.path.join(output_dir, 'index.html')) as f:
+            text = f.read()
+
+        for title in expected_titles:
+            assert title in text
+
+
+
 
 
 # TODO: Write tests for webhook -W. Werner, 2015-12-08

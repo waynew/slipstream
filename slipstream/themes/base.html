@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body {
+  background-color: grey;
+}
+
+div.header {
+  width: 40em;
+  margin: auto;
+  left: 50%-40em;
+  border: medium black solid;
+  border-radius: 3px;
+  background-color: black;
+  color: white;
+  margin-bottom: 1em;
+  text-align: center;
+}
+
+div.header a, div.header a:visited {
+  color: white;
+}
+
+div.post {
+  border: thin dotted black;
+  width: 40em;
+  margin: auto;
+  left: 50%-40em;
+  margin-bottom: 1em;
+  background-color: #f2f2f2;
+}
+
+div.post div.content {
+  margin: 1em;
+}
+
+div.post img {
+  max-width: 38em;
+  margin: 1em auto 1em 1em;
+  vertical-align: middle;
+}
+
+div.post h1 {
+  background-color: lightgrey;
+  margin: auto;
+}
+
+div.post div.footer a {
+  margin-right: 0.3em;
+}
+
+div.post div.footer {
+  background-color: #eee;
+}
+
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="/preview/index.html"><h1>{{ BLOG_NAME or 'Blog' }}</h1></a>
+</div>
+{% block posts %}
+{% endblock %}
+</body>
+</html>

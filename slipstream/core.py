@@ -36,12 +36,26 @@ Valid keys are:
 
 
 '''
+import CommonMark
+import functools
+import jinja2
+import logging
 import os
 import re
 from flask import current_app
 from datetime import datetime
 from textwrap import dedent
 from . import config
+
+logger = logging.getLogger(__name__)
+
+parser = CommonMark.DocParser()
+renderer = CommonMark.HTMLRenderer()
+
+env = jinja2.Environment(
+    loader = jinja2.FileSystemLoader(os.path.join(os.path.dirname(__file__),
+                                                  'themes')),
+)
 
 
 class Post:
@@ -121,9 +135,31 @@ class Post:
 
         return timestamp
 
+    def _pretty_timestamp(self, timestamp):
+        if timestamp.hour or timestamp.minute:
+            fmt = '{:%Y-%m-%d %I:%M %p}'
+        else:
+            fmt = '{:%Y-%m-%d}'
+        return fmt.format(timestamp)
+
+    @property
+    def pretty_publish_timestamp(self):
+        return self._pretty_timestamp(self.publish_timestamp)
+
+    @property
+    def pretty_update_timestamp(self):
+        if self.update_timestamp:
+            return self._pretty_timestamp(self.update_timestamp)
+        else:
+            return 'Never'
+
     @property
     def slug(self):
         return self._slug or slugify(self.title)
+
+    @property
+    def content(self):
+        return renderer.render(parser.parse(self.raw_content))
 
     def render(self, template=None):
         '''
@@ -132,7 +168,9 @@ class Post:
         template in ``config['POST_TEMPLATE']``.
         '''
         template = template or config['POST_TEMPLATE']
-        return template.render(post=self)
+        print(template)
+        result = template.render(post=self)
+        return result
 
 
 def slugify(text):
@@ -149,7 +187,7 @@ def slugify(text):
     >>> slugify('NaCl')
     'nacl'
     '''
-    return re.sub(r'[^a-z0-9]+', '-', text.lower())
+    return re.sub(r'[^a-z0-9]+', '-', text.lower()).strip('-')
 
 
 def publish(title, author, content, **headers):
@@ -157,11 +195,14 @@ def publish(title, author, content, **headers):
     Publish stuff
     '''
 
-    new_post = Post(dedent('''\
-                       Title: {}
+    try:
+        new_post = Post('Title: {}\n{}'.format(title, content))
+    except (KeyError, ValueError):
+        new_post = Post(dedent('''\
+                           Title: {}
 
-                       {}
-                       ''').format(title, content), **headers)
+                           {}
+                           ''').format(title, content), **headers)
 
     path_to_post = os.path.join(config['CONTENT_DIR'], new_post.slug+'.md')
     with open(path_to_post, 'w') as f:
@@ -171,7 +212,10 @@ def publish(title, author, content, **headers):
                    output_dir=config['OUTPUT_DIR'])
 
     for tag in new_post.tags:
-        generate_tag_page(tag=tag, output_dir=config['OUTPUT_DIR'])
+        logger.debug('Generating tag page for %r', tag)
+        generate_tag_page(tag=tag,
+                          content_dir=config['CONTENT_DIR'],
+                          output_dir=config['OUTPUT_DIR'])
 
     generate_rss(content_dir=config['CONTENT_DIR'],
                  output_dir=config['OUTPUT_DIR'])
@@ -183,21 +227,41 @@ def publish(title, author, content, **headers):
         publish_webhook(new_post, config['PUBLISH_WEBHOOK'])
 
 
+def load_posts(*, content_dir):
+    '''
+    Load all posts from the provided ``content_dir``.
+    '''
+    posts = []
+    for entry in os.scandir(content_dir):
+        if not entry.name.startswith('.') and entry.name.endswith('.md') and entry.is_file():
+            with open(os.path.join(content_dir, entry.name)) as f:
+                posts.append(Post(f.read()))
+    return list(reversed(sorted(posts, key=lambda x: x.publish_timestamp)))
+
+
 def generate_index(*, content_dir, output_dir):
     '''
     Generate index.html from the posts contained in content_dir``, saving the
     output in ``output_dir``. If files exist in the output_dir with the same
     name they will be overwritten.
     '''
-    # TODO: Implement me -W. Werner, 2015-12-07
+    posts = load_posts(content_dir=content_dir)
+    template = env.get_template('index.html')
+    with open(os.path.join(output_dir, 'index.html'), 'w') as f:
+        f.write(template.render(posts=posts))
 
 
-def generate_tag_page(*, tag, output_dir):
+def generate_tag_page(*, tag, content_dir, output_dir):
     '''
     Generate ``output_dir``/tag/``tag``.html that contains snippets and links
     to each of the posts that has the provided tag.
     '''
-    # TODO: Implement me -W. Werner, 2015-12-07
+    os.makedirs(os.path.join(output_dir, 'tag'), exist_ok=True)
+    template = env.get_template('tag.html')
+    posts = load_posts(content_dir=content_dir)
+    with open(os.path.join(output_dir, 'tag', tag)+'.html', 'w') as f:
+        f.write(template.render(posts=(post 
+                                       for post in posts if tag in post.tags)))
 
 
 def generate_rss(*, content_dir, output_dir):
@@ -223,3 +287,23 @@ def publish_webhook(*, post, webhook_url):
     '''
     # Right now I really only care about discourse, but I suspect it might be
     # nice to provide other endpoints
+
+
+def regenerate(*, content_dir, output_dir):
+    '''
+    Regenerate all pages in the site, from ``content_dir`` to ``output_dir``.
+    '''
+
+    for entry in os.scandir(content_dir):
+        if not entry.name.endswith('.md'):
+            continue
+        with open(os.path.join(content_dir, entry.name), 'r') as f:
+            post = Post(f.read())
+            with open(os.path.join(output_dir, post.slug+'.html'), 'w') as f:
+                f.write(post.render())
+
+    generate_index(content_dir=content_dir, output_dir=output_dir)
+
+    for post in load_posts(content_dir=content_dir):
+        for tag in post.tags:
+            generate_tag_page(tag=tag, content_dir=content_dir, output_dir=output_dir)

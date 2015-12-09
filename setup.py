@@ -48,7 +48,7 @@ setup(
     cmdclass={'test': PyTest},
     package_dir={'slipstream': 'slipstream'},
     include_package_data=True,
-    install_requires=['flask', 'flask-login'
+    install_requires=['flask', 'flask-login', 'commonmark',
     ],
     license="GPLv3",
     zip_safe=False,
