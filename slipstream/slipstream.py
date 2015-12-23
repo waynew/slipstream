@@ -46,6 +46,7 @@ def api(api_key):
         return 'OK'
 
 
+@app.route('/preview', defaults={'path': 'index.html'})
 @app.route('/preview/<path:path>')
 def preview(path):
     core.env = core.jinja2.Environment(

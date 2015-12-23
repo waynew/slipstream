@@ -168,7 +168,6 @@ class Post:
         template in ``config['POST_TEMPLATE']``.
         '''
         template = template or config['POST_TEMPLATE']
-        print(template)
         result = template.render(post=self)
         return result
 

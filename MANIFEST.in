@@ -1,2 +1,4 @@
-include slipstream/themes/*
+include slipstream/themes/**/*
 exclude slipstream/themes/*.swp
+include HISTORY.rst
+include README.rst

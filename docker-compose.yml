@@ -1,0 +1,22 @@
+blog_data:
+    image: busybox
+    volumes:
+        - /blog/content
+        - /blog/output
+
+blog_generator:
+    image: waynew/slipstream
+    volumes_from:
+        - blog_data
+    environment:
+        - SLIPSTREAM_CONTENT_DIR=/blog/content
+        - SLIPSTREAM_OUTPUT_DIR=/blog/output
+        - SLIPSTREAM_DEFAULT_AUTHOR=Cool Guy
+        - SLIPSTREAM_SITE_URL=http://home.waynewerner.com:5000/preview
+        - SLIPSTREAM_BLOG_NAME=Slipstream is Awesome
+        - SLIPSTREAM_PORT=5000
+        - SLIPSTREAM_API_KEY=change-me-please
+    ports:
+        - "0.0.0.0:5001:5000"
+
+

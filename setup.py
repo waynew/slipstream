@@ -43,12 +43,13 @@ setup(
     entry_points={
         'console_scripts': [
             'slipstream = slipstream.slipstream:run',
+            'slipstream-vortex = slipstream.vortex:run',
         ],
     },
     cmdclass={'test': PyTest},
     package_dir={'slipstream': 'slipstream'},
     include_package_data=True,
-    install_requires=['flask', 'flask-login', 'commonmark',
+    install_requires=['flask', 'flask-login', 'commonmark', 'tornado',
     ],
     license="GPLv3",
     zip_safe=False,
